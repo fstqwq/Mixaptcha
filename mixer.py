@@ -24,7 +24,7 @@ def mixer(file1, file2):
     image_array1 = np.array(image1)
     image_array2 = np.array(image2)
 
-    new_image_array = (image_array1 * 0.2 + image_array2 * 0.8).astype('uint8')
+    new_image_array = (image_array1 * 0.5 + image_array2 * 0.5).astype('uint8')
     return Image.fromarray(new_image_array)
 
 
@@ -43,8 +43,8 @@ for i in range(1, test_mixed_num + 1):
     u = 1
     v = 1
     while u == v:
-        u = random.randint(1, files_counter)
-        v = random.randint(1, files_counter)
+        u = random.randint(1, test_mixed_num)
+        v = random.randint(1, test_mixed_num)
     mixed_image = mixer(data_path + str(u) + ".jpg", data_path + str(v) + ".jpg")
     mixed_image.save(".\\test_data_1\\" + str(i) + ".jpg")
 

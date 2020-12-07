@@ -11,25 +11,26 @@ physical_device = tf.config.experimental.list_physical_devices("GPU")
 tf.config.experimental.set_memory_growth(physical_device[0], True)
 
 train_data_label = []
-
 test_data_label = []
 
-for home, dirs, files in os.walk(".\\test_data_0\\"):
+dataset = "0"
+
+for home, dirs, files in os.walk(".\\test_data_" + dataset + "_label_0\\"):
     for filename in files:
         image_array = np.array(Image.open(home + filename))
         test_data_label.append([image_array, 0])
 
-for home, dirs, files in os.walk(".\\test_data_1\\"):
+for home, dirs, files in os.walk(".\\test_data_" + dataset + "_label_1\\"):
     for filename in files:
         image_array = np.array(Image.open(home + filename))
         test_data_label.append([image_array, 1])
 
-for home, dirs, files in os.walk(".\\train_data_0\\"):
+for home, dirs, files in os.walk(".\\train_data_" + dataset + "_label_0\\"):
     for filename in files:
         image_array = np.array(Image.open(home + filename))
         train_data_label.append([image_array, 0])
 
-for home, dirs, files in os.walk(".\\train_data_1\\"):
+for home, dirs, files in os.walk(".\\train_data_" + dataset + "_label_1\\"):
     for filename in files:
         image_array = np.array(Image.open(home + filename))
         train_data_label.append([image_array, 1])
@@ -206,13 +207,12 @@ class ResNet(tf.keras.models.Model):
         print('fully connected', net.shape)
         return net
 
-
-model = ResNet(152)
+model = ResNet(50)
 model.build(input_shape=(None, 224, 224, 3))
 
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
 
-checkpoint_path = "mix_015/cp-{epoch:04d}.ckpt"
+checkpoint_path = "dataset_0/cp-{epoch:04d}.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
 cp_callback = tf.keras.callbacks.ModelCheckpoint(
     filepath=checkpoint_path, 
@@ -221,7 +221,7 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(
     period=10)
 model.save_weights(checkpoint_path.format(epoch=0))
 
-model.fit(train_data, train_label, epochs=100, validation_data=(test_data, test_label), batch_size=10, callbacks=[cp_callback])
+model.fit(train_data, train_label, epochs=50, validation_data=(test_data, test_label), batch_size=10, callbacks=[cp_callback])
 
 test_loss, test_acc = model.evaluate(test_data,  test_label, verbose=2)
 print('\nTest accuracy:', test_acc)
