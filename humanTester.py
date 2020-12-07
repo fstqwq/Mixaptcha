@@ -14,6 +14,12 @@ class App():
     def show_img(self):
         self.image_on_canvas = self.canvas.create_image(padding + picwidth / 2 , padding , anchor='n',image=self.photo)
 
+    def keyevent(self, event):
+        if event.keycode == 37:
+            self.click(1)
+        else:
+            self.click(0)
+
     def click(self, x):
         print('click', x, x == self.current_label)
         self.counter[self.current_label][x] += 1
@@ -53,6 +59,9 @@ class App():
         self.b2 = tk.Button(self.root, text='RAW', font=("Consolas", 28), fg="white", bg="green", width=7,  height=2, command=lambda : self.click(0))
         self.b1.grid(row=1,column=0)
         self.b2.grid(row=1,column=1)
+        
+        self.root.bind("<Left>", self.keyevent)
+        self.root.bind("<Right>", self.keyevent)
         
 
 if __name__ == "__main__":
