@@ -2,17 +2,25 @@ from PIL import Image
 import numpy as np
 import random
 import os
+import shutil
+import argparse
 
 const_h = 224
 const_w = 224
-data_img_counter = 0
 
-data_path = ".\\data\\"
+parser = argparse.ArgumentParser()
+parser.add_argument("--train_size", type=int, default="2000")
+parser.add_argument("--test_size", type=int, default="1000")
+parser.add_argument("--source_dir", type=str, required=True)
+parser.add_argument("--output_dir", type=str, default="dataset")
+parser.add_argument("--mix_rate", type=float, default="0.5")
 
-for i in ("0", "1"):
-    for j in ("test_data", "train_data"):
-        for k in ("0", "1", "2"):
-            os.system("mkdir " + j + "_" + k + "_label_" + i)
+args = parser.parse_args()
+source_dir = args.source_dir
+output_dir = args.output_dir
+train_size = args.train_size
+test_size = args.test_size
+mix_rate = args.mix_rate
 
 def mixer(file1, file2):
     print("dealing with " + file1 + ", " + file2)
@@ -22,51 +30,54 @@ def mixer(file1, file2):
     image_array1 = np.array(image1)
     image_array2 = np.array(image2)
 
-    new_image_array = (image_array1 * 0.3 + image_array2 * 0.7).astype('uint8')
+    new_image_array = (image_array1 * mix_rate + image_array2 * (1 - mix_rate)).astype('uint8')
     return Image.fromarray(new_image_array)
 
+def save_image(image, id, dir):
+    image.save(os.path.join(dir, str(id) + ".jpg"))
 
-files_counter = 0
+def copy_image(file, id, dir):
+    shutil.copyfile(file, os.path.join(dir, str(id) + ".jpg"))
 
-for home, dirs, files in os.walk(data_path):
-    for filename in files:
-        files_counter += 1
+li = os.listdir(source_dir)
+image_count = len(li)
+print("source image count: ", image_count)
+if train_size // 2 * 3 + test_size // 2 * 3 > image_count:
+    print("required size is too large!")
+    exit(0)
+random.shuffle(li)
+if not os.path.exists(os.path.join(output_dir, "train_data", "0")):
+    os.makedirs(os.path.join(output_dir, "train_data", "0"))
+if not os.path.exists(os.path.join(output_dir, "train_data", "1")):
+    os.makedirs(os.path.join(output_dir, "train_data", "1"))
+if not os.path.exists(os.path.join(output_dir, "test_data", "0")):
+    os.makedirs(os.path.join(output_dir, "test_data", "0"))
+if not os.path.exists(os.path.join(output_dir, "test_data", "1")):
+    os.makedirs(os.path.join(output_dir, "test_data", "1"))
 
+index = 0
+for i in range(0, train_size // 2):
+    save_image(
+        mixer(os.path.join(source_dir, li[index]), os.path.join(source_dir, li[index + 1])), 
+        i + 1, 
+        os.path.join(output_dir, "train_data", "1"))
+    index += 2
+for i in range(train_size // 2, train_size):
+    copy_image(
+        os.path.join(source_dir, li[index]), 
+        i - train_size // 2 + 1, 
+        os.path.join(output_dir, "train_data", "0"))
+    index += 1
+for i in range(0, test_size // 2):
+    save_image(
+        mixer(os.path.join(source_dir, li[index]), os.path.join(source_dir, li[index + 1])), 
+        i + 1, 
+        os.path.join(output_dir, "test_data", "1"))
+    index += 2
+for i in range(test_size // 2, test_size):
+    copy_image(
+        os.path.join(source_dir, li[index]), 
+        i - test_size // 2 + 1, 
+        os.path.join(output_dir, "test_data", "0"))
+    index += 1
 
-test_mixed_num = 1000
-test_unmixed_num = 1000
-train_mixed_num = 7000
-train_unmixed_num = 7000
-
-for dataset in ("0", "1", "2"):
-    for i in range(1, test_mixed_num + 1):
-        u = 1
-        v = 1
-        while u == v:
-            u = random.randint(1, test_mixed_num + 1)
-            v = random.randint(1, test_mixed_num + 1)
-        u = u + int(dataset) * (test_mixed_num + test_unmixed_num + train_mixed_num + train_unmixed_num)
-        v = v + int(dataset) * (test_mixed_num + test_unmixed_num + train_mixed_num + train_unmixed_num)
-        mixed_image = mixer(data_path + str(u) + ".jpg", data_path + str(v) + ".jpg")
-        mixed_image.save(".\\test_data_" + dataset + "_label_1\\" + str(i) + ".jpg")
-
-    for i in range(test_mixed_num + 1, test_unmixed_num + test_mixed_num + 1):
-        u = i + int(dataset) * (test_mixed_num + test_unmixed_num + train_mixed_num + train_unmixed_num)
-        mixed_image = Image.open(data_path + str(u) + ".jpg")
-        mixed_image.save(".\\test_data_" + dataset + "_label_0\\" + str(i - test_mixed_num) + ".jpg")
-
-    for i in range(test_unmixed_num + test_mixed_num + 1, test_unmixed_num + test_mixed_num + train_mixed_num + 1):
-        u = 1
-        v = 1
-        while u == v:
-            u = random.randint(test_unmixed_num + test_mixed_num + 1, test_unmixed_num + test_mixed_num + train_mixed_num + 1)
-            v = random.randint(test_unmixed_num + test_mixed_num + 1, test_unmixed_num + test_mixed_num + train_mixed_num + 1)
-        u = u + int(dataset) * (test_mixed_num + test_unmixed_num + train_mixed_num + train_unmixed_num)
-        v = v + int(dataset) * (test_mixed_num + test_unmixed_num + train_mixed_num + train_unmixed_num)
-        mixed_image = mixer(data_path + str(u) + ".jpg", data_path + str(v) + ".jpg")
-        mixed_image.save(".\\train_data_" + dataset + "_label_1\\" + str(i - test_unmixed_num - test_mixed_num) + ".jpg")
-
-    for i in range(test_unmixed_num + test_mixed_num + train_mixed_num + 1, test_unmixed_num + test_mixed_num + train_mixed_num + train_unmixed_num + 1):
-        u = i + int(dataset) * (test_mixed_num + test_unmixed_num + train_mixed_num + train_unmixed_num)
-        mixed_image = Image.open(data_path + str(u) + ".jpg")
-        mixed_image.save(".\\train_data_" + dataset + "_label_0\\" + str(i - test_unmixed_num - test_mixed_num - train_mixed_num) + ".jpg")
